@@ -1,18 +1,16 @@
 import os
 from datetime import datetime
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, Query
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 from jose import jwt, JWTError
 from starlette import status
-from starlette.exceptions import WebSocketException
 
 from schema.message_schema import Message as Message_schema
 from typing import Dict
 from core.utils import get_crud
-from pyfcm import FCMNotification
+# from pyfcm import FCMNotification
 
-from model.message_dbmodel import Room, Message, Account
+from model.message_dbmodel import Room, Message
 
 router = APIRouter()
 
