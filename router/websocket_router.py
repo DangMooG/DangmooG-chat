@@ -39,25 +39,39 @@ class ConnectionManager:
         crud = next(crud_generator)
         room_information = crud.search_record(Room, {"room_id": room})[0]
         if room_information.buyer_id == sender:
-            crud.create_record(Message, Message_schema(
-                room_id=room,
-                is_from_buyer=1,
-                content=message
-            ))
             if room_information.seller_id not in self.active_connections.keys():
+                crud.create_record(Message, Message_schema(
+                    room_id=room,
+                    is_from_buyer=1,
+                    content=message,
+                    read=0
+                ))
                 print("There is no opponent, app-push function will be executed")
             else:
+                crud.create_record(Message, Message_schema(
+                    room_id=room,
+                    is_from_buyer=1,
+                    content=message,
+                    read=1
+                ))
                 await self.active_connections[room_information.seller_id].send_text(message)
 
         else:
-            crud.create_record(Message, Message_schema(
-                room_id=room,
-                is_from_buyer=0,
-                content=message
-            ))
             if room_information.buyer_id not in self.active_connections.keys():
+                crud.create_record(Message, Message_schema(
+                    room_id=room,
+                    is_from_buyer=1,
+                    content=message,
+                    read=0
+                ))
                 print("There is no opponent, app-push function will be executed")
             else:
+                crud.create_record(Message, Message_schema(
+                    room_id=room,
+                    is_from_buyer=1,
+                    content=message,
+                    read=1
+                ))
                 await self.active_connections[room_information.buyer_id].send_text(message)
 
 
