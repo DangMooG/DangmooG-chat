@@ -54,7 +54,7 @@ class ConnectionManager:
                     content=message,
                     read=1
                 ))
-                await self.active_connections[room_information.seller_id].send_text(message)
+                await self.active_connections[room_information.seller_id].send_text(room+message)
 
         else:
             if room_information.buyer_id not in self.active_connections.keys():
@@ -72,7 +72,7 @@ class ConnectionManager:
                     content=message,
                     read=1
                 ))
-                await self.active_connections[room_information.buyer_id].send_text(message)
+                await self.active_connections[room_information.buyer_id].send_text(room+message)
 
 
 manager = ConnectionManager()
@@ -106,6 +106,7 @@ def get_current_user(token: str):
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, token: str):
     user_id = int(get_current_user(token))
+    print(f"userid: {user_id}")
     await manager.connect(websocket, user_id)
     try:
         while True:
