@@ -38,6 +38,7 @@ class ConnectionManager:
         crud_generator = get_crud()
         crud = next(crud_generator)
         room_information = crud.search_record(Room, {"room_id": room})[0]
+        print(room_information.buyer_id, "<-buyer, sender->", sender)
         if room_information.buyer_id == sender:
             if room_information.seller_id not in self.active_connections.keys():
                 crud.create_record(Message, Message_schema(
