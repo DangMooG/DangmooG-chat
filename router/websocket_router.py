@@ -61,7 +61,7 @@ class ConnectionManager:
             if room_information.buyer_id not in self.active_connections.keys():
                 crud.create_record(Message, Message_schema(
                     room_id=room,
-                    is_from_buyer=1,
+                    is_from_buyer=0,
                     content=message,
                     read=0
                 ))
@@ -69,7 +69,7 @@ class ConnectionManager:
             else:
                 crud.create_record(Message, Message_schema(
                     room_id=room,
-                    is_from_buyer=1,
+                    is_from_buyer=0,
                     content=message,
                     read=1
                 ))
