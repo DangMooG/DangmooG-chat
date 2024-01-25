@@ -1,5 +1,3 @@
-import math
-
 from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -49,40 +47,6 @@ class CRUD:
 
         return db_record
 
-    def delete_record(self, table: BaseModel, cond={}):
-        db_record = self.get_record(table, cond)
-        if db_record:
-            self.session.delete(db_record)
-            self.session.commit()
-            return 1
-        else:
-            return -1
-
-    def paging_record(self, table: BaseModel, req: BaseModel):
-        total_row = self.session.query(table).count()
-        if total_row % req.size == 0:
-            total_page = math.floor(total_row / req.size)
-        else:
-            total_page = math.floor(total_row / req.size) + 1
-        start = (req.page - 1) * req.size
-
-        items = self.session.query(table).order_by(table.create_time.desc()).offset(start).limit(req.size).all()
-        pages = {"items": items, "total_pages": total_page, "page": req.page, "size": req.size, "total_row": total_row}
-        return pages
-
-    def app_paging_record(self, table: BaseModel, size: int, checkpoint: int = 0):
-        total_row = self.session.query(table).count()
-        if checkpoint == 0:
-            start = checkpoint
-            items = self.session.query(table).order_by(table.create_time.desc()).offset(start).limit(size).all()
-            return {"items": items, "next_checkpoint": total_row - size}
-        else:
-            start = total_row - checkpoint
-            items = self.session.query(table).order_by(table.create_time.desc()).offset(start).limit(size).all()
-            next_checkpoint = checkpoint - size
-            if next_checkpoint < 1:
-                next_checkpoint = -1
-            return {"items": items, "next_checkpoint": next_checkpoint}
 
     def search_record(self, table: BaseModel, req: Union[BaseModel, dict]):
         if isinstance(req, BaseModel):

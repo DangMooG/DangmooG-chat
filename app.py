@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi_socketio import SocketManager
 
 from router import websocket_router
 
 chat_app = FastAPI(title="DangmooG", debug=True)
-
+socket_manager = SocketManager(app=chat_app, logger=True, engineio_logger=True)
 
 # CORS RULES
 origins = [

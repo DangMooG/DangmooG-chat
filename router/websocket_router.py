@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 
+import socketio
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 from jose import jwt, JWTError
 from starlette import status
@@ -11,6 +12,7 @@ from core.utils import get_crud
 # from pyfcm import FCMNotification
 
 from model.message_dbmodel import Room, Message
+from ..app import socket_manager as sm
 
 router = APIRouter()
 
@@ -18,6 +20,8 @@ router = APIRouter()
 # Your api-key can be gotten from:  https://console.firebase.google.com/project/<project-name>/settings/cloudmessaging
 # push_service = FCMNotification(api_key=os.environ.get("FCM_API_KEY"))
 # DB에 따로 FCM 토큰을 저장하고 상대방이 접속중이 아닐 때는 DB에서 토큰을 받아와서 해당 사용자에게 푸시알림 실행하는 과정 시행
+
+
 
 
 class ConnectionManager:
@@ -103,22 +107,66 @@ def get_current_user(token: str):
     except JWTError:
         raise credentials_exception
     else:
-        return account_id
+        return int(account_id)
 
 
-@router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket, token: str):
-    user_id = int(get_current_user(token))
-    print(f"userid: {user_id}")
-    await manager.connect(websocket, user_id)
-    try:
-        while True:
-            data = await websocket.receive_text()
-            room_name = data[:36]
-            message = data[36:]
-            # database에 채팅에 대한 내용 올리는 거 추가
-            # 나중에 기존 api 서버에서 채팅 내역을 조회할 수 있는 api 가져오기
-            await manager.broadcast(message, room_name, user_id)
-    except WebSocketDisconnect:
-        manager.disconnect(user_id)
-        # await manager.broadcast(f"Client left the chat room: {room_name}", room_name)
+class MyCustomNamespace(socketio.AsyncNamespace):
+    def __init__(self):
+        super.__init__()
+        crud_generator = get_crud()
+        self.crud = next(crud_generator)
+
+    async def on_connect(self, sid, token):
+        uid = get_current_user(token)
+        async with sm.session(sid) as session:
+            session['uid'] = uid
+
+    async def on_room_enter(self, sid, room: str):
+        sm.enter_room(sid, room)
+
+    async def on_room_exit(self, sid, room: str):
+        sm.leave_room(sid, room)
+
+    async def on_my_event(self, sid, room, content):
+        session = await sm.get_session(sid)
+        sender = session['uid']
+        room_information = self.crud.search_record(Room, {"room_id": room})[0]
+        print(room_information.buyer_id, "<-buyer, sender->", sender)
+        print(f"room: {room} message: {content}")
+        if room_information.buyer_id == sender:
+            if room_information.seller_id not in self.active_connections.keys():
+                self.crud.create_record(Message, Message_schema(
+                    room_id=room,
+                    is_from_buyer=1,
+                    content=content["message"],
+                    read=0
+                ))
+                print("There is no opponent, app-push function will be executed")
+            else:
+                self.crud.create_record(Message, Message_schema(
+                    room_id=room,
+                    is_from_buyer=1,
+                    content=content["message"],
+                    read=1
+                ))
+        else:
+            if room_information.buyer_id not in self.active_connections.keys():
+                self.crud.create_record(Message, Message_schema(
+                    room_id=room,
+                    is_from_buyer=0,
+                    content=content["message"],
+                    read=0
+                ))
+                print("There is no opponent, app-push function will be executed")
+            else:
+                self.crud.create_record(Message, Message_schema(
+                    room_id=room,
+                    is_from_buyer=0,
+                    content=content["message"],
+                    read=1
+                ))
+        await self.send('my_response', data=content, room=room)
+
+
+sm.register_namespace(MyCustomNamespace('/chat'))
+
