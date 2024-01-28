@@ -8,16 +8,33 @@ from starlette import status
 from schema.message_schema import Message as Message_schema
 from typing import Dict
 from core.utils import get_crud
-# from pyfcm import FCMNotification
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import messaging
 
-from model.message_dbmodel import Room, Message
+from model.message_dbmodel import Room, Message, Account
 
 router = APIRouter()
-
+credit = credentials.Certificate("firebase-adminsdk.json")
+firebase_admin.initialize_app(credit)
 
 # Your api-key can be gotten from:  https://console.firebase.google.com/project/<project-name>/settings/cloudmessaging
 # push_service = FCMNotification(api_key=os.environ.get("FCM_API_KEY"))
 # DB에 따로 FCM 토큰을 저장하고 상대방이 접속중이 아닐 때는 DB에서 토큰을 받아와서 해당 사용자에게 푸시알림 실행하는 과정 시행
+
+
+def send_push(token: str, title: str, body: str):
+    # See documentation on defining a message payload.
+    message = messaging.Message(
+        notification=messaging.Notification(
+            title=title,
+            body=body
+        ),
+        token=token,
+    )
+    # Response is a message ID string.
+    response = messaging.send(message)
+    print('Successfully sent message:', response)
 
 
 class ConnectionManager:
@@ -49,7 +66,10 @@ class ConnectionManager:
                     content=message,
                     read=0
                 ))
-                print("There is no opponent, app-push function will be executed")
+                sender_account = crud.get_record(Account, {"account_id": sender})
+                uname = sender_account.username
+                reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
+                send_push(reciever.fcm, uname, message)
             else:
                 crud.create_record(Message, Message_schema(
                     room_id=room,
@@ -67,7 +87,10 @@ class ConnectionManager:
                     content=message,
                     read=0
                 ))
-                print("There is no opponent, app-push function will be executed")
+                sender_account = crud.get_record(Account, {"account_id": sender})
+                uname = sender_account.username
+                reciever: Account = crud.get_record(Account, {"account_id": room_information.buyer_id})
+                send_push(reciever.fcm, uname, message)
             else:
                 crud.create_record(Message, Message_schema(
                     room_id=room,
