@@ -15,8 +15,7 @@ from firebase_admin import messaging
 from model.message_dbmodel import Room, Message, Account
 
 router = APIRouter()
-credit = credentials.Certificate("firebase-adminsdk.json")
-firebase_admin.initialize_app(credit)
+credit = None
 
 # Your api-key can be gotten from:  https://console.firebase.google.com/project/<project-name>/settings/cloudmessaging
 # push_service = FCMNotification(api_key=os.environ.get("FCM_API_KEY"))
@@ -25,6 +24,10 @@ firebase_admin.initialize_app(credit)
 
 def send_push(token: str, title: str, body: str):
     # See documentation on defining a message payload.
+    global credit
+    if credit is None:
+        credit = credentials.Certificate("firebase-adminsdk.json")
+        firebase_admin.initialize_app(credit)
     message = messaging.Message(
         notification=messaging.Notification(
             title=title,
