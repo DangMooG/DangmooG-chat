@@ -22,7 +22,7 @@ credit = None
 # DB에 따로 FCM 토큰을 저장하고 상대방이 접속중이 아닐 때는 DB에서 토큰을 받아와서 해당 사용자에게 푸시알림 실행하는 과정 시행
 
 
-def send_push(token: str, title: str, body: str):
+async def send_push(token: str, title: str, body: str):
     # See documentation on defining a message payload.
     global credit
     if credit is None:
@@ -47,7 +47,6 @@ def send_push(token: str, title: str, body: str):
                 ),
             ),
         ),
-        topic='all'
     )
     # Response is a message ID string.
     response = messaging.send(message)
@@ -86,13 +85,13 @@ class ConnectionManager:
                 sender_account = crud.get_record(Account, {"account_id": sender})
                 uname = sender_account.username
                 reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
-                send_push(reciever.fcm, uname, message)
+                await send_push(reciever.fcm, uname, message)
             else:
                 crud.create_record(Message, Message_schema(
                     room_id=room,
                     is_from_buyer=1,
                     content=message,
-                    read=1
+                    read=0
                 ))
                 await self.active_connections[room_information.seller_id].send_text(room+message)
 
@@ -107,13 +106,13 @@ class ConnectionManager:
                 sender_account = crud.get_record(Account, {"account_id": sender})
                 uname = sender_account.username
                 reciever: Account = crud.get_record(Account, {"account_id": room_information.buyer_id})
-                send_push(reciever.fcm, uname, message)
+                await send_push(reciever.fcm, uname, message)
             else:
                 crud.create_record(Message, Message_schema(
                     room_id=room,
                     is_from_buyer=0,
                     content=message,
-                    read=1
+                    read=0
                 ))
                 await self.active_connections[room_information.buyer_id].send_text(room+message)
 
