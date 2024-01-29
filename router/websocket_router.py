@@ -31,9 +31,23 @@ def send_push(token: str, title: str, body: str):
     message = messaging.Message(
         notification=messaging.Notification(
             title=title,
-            body=body
+            body=body,
         ),
         token=token,
+        android=messaging.AndroidConfig(
+            priority='high',
+            notification=messaging.AndroidNotification(
+                sound='default'
+            )
+        ),
+        apns=messaging.APNSConfig(
+            payload=messaging.APNSPayload(
+                aps=messaging.Aps(
+                    sound='default'
+                ),
+            ),
+        ),
+        topic='all'
     )
     # Response is a message ID string.
     response = messaging.send(message)
