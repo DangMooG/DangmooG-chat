@@ -4,3 +4,4 @@ __init__.py
 .idea
 __pycache__
 .DS_Store
+docker-compose.yml
