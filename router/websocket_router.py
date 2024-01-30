@@ -2,12 +2,11 @@ import os
 from datetime import datetime
 
 import socketio
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import APIRouter, HTTPException
 from jose import jwt, JWTError
 from starlette import status
 
 from schema.message_schema import Message as Message_schema
-from typing import Dict
 from core.utils import get_crud
 # from pyfcm import FCMNotification
 
@@ -22,67 +21,6 @@ router = APIRouter()
 # DB에 따로 FCM 토큰을 저장하고 상대방이 접속중이 아닐 때는 DB에서 토큰을 받아와서 해당 사용자에게 푸시알림 실행하는 과정 시행
 
 
-
-
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: Dict[int, WebSocket] = {}
-
-    async def connect(self, websocket: WebSocket, user: int):
-        await websocket.accept()
-        self.active_connections[user] = websocket
-
-    def disconnect(self, user: int):
-        if user in self.active_connections:
-            del self.active_connections[user]
-
-    async def send_personal_message(self, message: str, websocket: WebSocket):
-        await websocket.send_text(message)
-
-    async def broadcast(self, message: str, room: str, sender: int):
-        crud_generator = get_crud()
-        crud = next(crud_generator)
-        room_information = crud.search_record(Room, {"room_id": room})[0]
-        print(room_information.buyer_id, "<-buyer, sender->", sender)
-        print(f"room: {room} message: {message}")
-        if room_information.buyer_id == sender:
-            if room_information.seller_id not in self.active_connections.keys():
-                crud.create_record(Message, Message_schema(
-                    room_id=room,
-                    is_from_buyer=1,
-                    content=message,
-                    read=0
-                ))
-                print("There is no opponent, app-push function will be executed")
-            else:
-                crud.create_record(Message, Message_schema(
-                    room_id=room,
-                    is_from_buyer=1,
-                    content=message,
-                    read=1
-                ))
-                await self.active_connections[room_information.seller_id].send_text(room+message)
-
-        else:
-            if room_information.buyer_id not in self.active_connections.keys():
-                crud.create_record(Message, Message_schema(
-                    room_id=room,
-                    is_from_buyer=0,
-                    content=message,
-                    read=0
-                ))
-                print("There is no opponent, app-push function will be executed")
-            else:
-                crud.create_record(Message, Message_schema(
-                    room_id=room,
-                    is_from_buyer=0,
-                    content=message,
-                    read=1
-                ))
-                await self.active_connections[room_information.buyer_id].send_text(room+message)
-
-
-manager = ConnectionManager()
 SECRET_KEY = os.environ["ACCESS_TOKEN_HASH"]
 ALGORITHM = "HS256"
 
@@ -111,61 +49,62 @@ def get_current_user(token: str):
 
 
 class MyCustomNamespace(socketio.AsyncNamespace):
-    def __init__(self):
-        super.__init__()
+    def __init__(self, namespace):
+        super().__init__(namespace=namespace)
+        self.connected_users = set()
+        self.room_users = {}
         crud_generator = get_crud()
         self.crud = next(crud_generator)
 
     async def on_connect(self, sid, token):
         uid = get_current_user(token)
+        self.connected_users.add(uid)
         async with sm.session(sid) as session:
             session['uid'] = uid
 
-    async def on_room_enter(self, sid, room: str):
-        sm.enter_room(sid, room)
+    async def on_disconnect(self, sid, token):
+        uid = get_current_user(token)
+        self.connected_users.remove(uid)
+        await sm.disconnect(sid)
 
-    async def on_room_exit(self, sid, room: str):
-        sm.leave_room(sid, room)
+    async def on_begin_chat(self, sid, room: str):
+        self.room_users.setdefault(room, set()).add(sid)
+        await sm.enter_room(sid, room)
 
-    async def on_my_event(self, sid, room, content):
+    async def on_exit_chat(self, sid, room: str):
+        if sid in self.room_users.get(room, set()):
+            self.room_users[room].remove(sid)
+        await sm.leave_room(sid, room)
+
+    async def on_send_chat(self, sid, room, content):
         session = await sm.get_session(sid)
         sender = session['uid']
         room_information = self.crud.search_record(Room, {"room_id": room})[0]
         print(room_information.buyer_id, "<-buyer, sender->", sender)
         print(f"room: {room} message: {content}")
-        if room_information.buyer_id == sender:
-            if room_information.seller_id not in self.active_connections.keys():
-                self.crud.create_record(Message, Message_schema(
-                    room_id=room,
-                    is_from_buyer=1,
-                    content=content["message"],
-                    read=0
-                ))
-                print("There is no opponent, app-push function will be executed")
-            else:
-                self.crud.create_record(Message, Message_schema(
-                    room_id=room,
-                    is_from_buyer=1,
-                    content=content["message"],
-                    read=1
-                ))
+        if len(self.room_users.get(room, set())) < 2:
+            not_in_room = True
         else:
-            if room_information.buyer_id not in self.active_connections.keys():
-                self.crud.create_record(Message, Message_schema(
-                    room_id=room,
-                    is_from_buyer=0,
-                    content=content["message"],
-                    read=0
-                ))
-                print("There is no opponent, app-push function will be executed")
-            else:
-                self.crud.create_record(Message, Message_schema(
-                    room_id=room,
-                    is_from_buyer=0,
-                    content=content["message"],
-                    read=1
-                ))
-        await self.send('my_response', data=content, room=room)
+            not_in_room = False
+        if room_information.buyer_id == sender:
+            is_from_buyer = 1
+            if room_information.seller_id not in self.connected_users:
+                print("app push", self.connected_users)
+            elif not_in_room:
+                print("in app push", self.room_users)
+        else:
+            is_from_buyer = 0
+            if room_information.buyer_id not in self.connected_users:
+                print("app push", self.connected_users)
+            elif not_in_room:
+                print("in app push", self.room_users)
+        self.crud.create_record(Message, Message_schema(
+            room_id=room,
+            is_from_buyer=is_from_buyer,
+            content=content["message"],
+            read=0
+        ))
+        await self.send(data=content, room=room)
 
 
 sm.register_namespace(MyCustomNamespace('/chat'))
