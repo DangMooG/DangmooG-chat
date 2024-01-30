@@ -3,3 +3,4 @@ __init__.py
 *.sql
 .idea
 __pycache__
+.DS_Store
