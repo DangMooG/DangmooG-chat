@@ -88,4 +88,4 @@ class MyCustomNamespace(socketio.AsyncNamespace):
         await self.send(data=content, room=room)
 
 
-sm.register_namespace(MyCustomNamespace('/chat'))
+sm.sio.register_namespace(MyCustomNamespace('/chat'))
