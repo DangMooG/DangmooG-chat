@@ -11,7 +11,9 @@ from core.utils import get_crud
 # from pyfcm import FCMNotification
 
 from model.message_dbmodel import Room, Message
-from ..app import socket_manager as sm
+import sys
+sys.path.append("..")
+from app import socket_manager as sm
 
 router = APIRouter()
 
