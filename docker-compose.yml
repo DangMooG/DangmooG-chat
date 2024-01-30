@@ -1,0 +1,15 @@
+version: "3"
+services:
+  dangmoog:
+    image: chat-io
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chat-io
+    ports:
+      - "4048:4048"
+    environment:
+      - SQLALCHEMY_DATABASE_URL=
+      - ACCESS_TOKEN_HASH=
+      - TZ=Asia/Seoul
+    restart: "always"
