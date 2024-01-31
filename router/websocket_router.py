@@ -15,19 +15,18 @@ from firebase_admin import messaging
 from model.message_dbmodel import Room, Message, Account
 
 router = APIRouter()
-credit = None
 
 # Your api-key can be gotten from:  https://console.firebase.google.com/project/<project-name>/settings/cloudmessaging
 # push_service = FCMNotification(api_key=os.environ.get("FCM_API_KEY"))
 # DB에 따로 FCM 토큰을 저장하고 상대방이 접속중이 아닐 때는 DB에서 토큰을 받아와서 해당 사용자에게 푸시알림 실행하는 과정 시행
 
+credit = credentials.Certificate("firebase-adminsdk.json")
+firebase_admin.initialize_app(credit)
+
 
 async def send_push(token: str, title: str, body: dict):
     # See documentation on defining a message payload.
-    global credit
-    if credit is None:
-        credit = credentials.Certificate("firebase-adminsdk.json")
-        firebase_admin.initialize_app(credit)
+
     message = messaging.Message(
         notification=messaging.Notification(
             title=title,
