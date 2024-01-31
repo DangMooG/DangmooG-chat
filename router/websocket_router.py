@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import datetime
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
@@ -19,7 +20,7 @@ router = APIRouter()
 # Your api-key can be gotten from:  https://console.firebase.google.com/project/<project-name>/settings/cloudmessaging
 # push_service = FCMNotification(api_key=os.environ.get("FCM_API_KEY"))
 # DB에 따로 FCM 토큰을 저장하고 상대방이 접속중이 아닐 때는 DB에서 토큰을 받아와서 해당 사용자에게 푸시알림 실행하는 과정 시행
-
+sys.path.append(".")
 credit = credentials.Certificate("firebase-adminsdk.json")
 firebase_admin.initialize_app(credit)
 
