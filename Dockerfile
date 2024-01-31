@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 #
 COPY . .
+COPY ./router/firebase_adminsdk.json .
 
 #
 CMD ["uvicorn", "app:chat_app", "--host", "0.0.0.0", "--port", "2024"]
