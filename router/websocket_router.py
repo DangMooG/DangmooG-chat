@@ -22,7 +22,7 @@ credit = None
 # DB에 따로 FCM 토큰을 저장하고 상대방이 접속중이 아닐 때는 DB에서 토큰을 받아와서 해당 사용자에게 푸시알림 실행하는 과정 시행
 
 
-async def send_push(token: str, title: str, body: str):
+async def send_push(token: str, title: str, body: dict):
     # See documentation on defining a message payload.
     global credit
     if credit is None:
@@ -71,7 +71,7 @@ class ConnectionManager:
     async def broadcast(self, message: str, room: str, sender: int):
         crud_generator = get_crud()
         crud = next(crud_generator)
-        room_information = crud.search_record(Room, {"room_id": room})[0]
+        room_information: Room = crud.search_record(Room, {"room_id": room})[0]
         print(room_information.buyer_id, "<-buyer, sender->", sender)
         print(f"room: {room} message: {message}")
         if room_information.buyer_id == sender:
@@ -85,7 +85,8 @@ class ConnectionManager:
                 sender_account = crud.get_record(Account, {"account_id": sender})
                 uname = sender_account.username
                 reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
-                await send_push(reciever.fcm, uname, message)
+                await send_push(reciever.fcm, uname,
+                                {"room_id": room, "post_id": room_information.post_id, "message": message})
             else:
                 crud.create_record(Message, Message_schema(
                     room_id=room,
@@ -106,7 +107,8 @@ class ConnectionManager:
                 sender_account = crud.get_record(Account, {"account_id": sender})
                 uname = sender_account.username
                 reciever: Account = crud.get_record(Account, {"account_id": room_information.buyer_id})
-                await send_push(reciever.fcm, uname, message)
+                await send_push(reciever.fcm, uname,
+                                {"room_id": room, "post_id": room_information.post_id, "message": message})
             else:
                 crud.create_record(Message, Message_schema(
                     room_id=room,
