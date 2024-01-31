@@ -32,16 +32,16 @@ class MyCustomNamespace(socketio.AsyncNamespace):
         self.connected_users = set()
         self.room_users = {}
 
-    def on_connect(self, sid, environ, auth):
+    async def on_connect(self, sid, environ, auth):
         uid = get_current_user(auth['token'])
         self.connected_users.add(uid)
         print(uid)
-        sm.save_session(sid, {'uid': uid})
+        await sm.save_session(sid, {'uid': uid})
 
-    def on_disconnect(self, sid):
+    async def on_disconnect(self, sid):
         session = sm.get_session(sid)
         self.connected_users.remove(session['uid'])
-        sm.disconnect(sid)
+        await sm.disconnect(sid)
 
     async def on_begin_chat(self, sid, room: str):
         self.room_users.setdefault(room, set()).add(sid)
@@ -52,13 +52,14 @@ class MyCustomNamespace(socketio.AsyncNamespace):
             self.room_users[room].remove(sid)
         await sm.leave_room(sid, room)
 
-    async def on_send_chat(self, sid, room, content):
+    async def on_send_chat(self, sid, data: dict):
         session = await sm.get_session(sid)
+        print(session)
         sender = session['uid']
-        print(f"room: {room} message: {content}")
-        await self.send(data=content, room=room)
+        print(f"room: {data['room']} message: {data['content']}")
+        await self.send(data=data['content'], room=data['room'])
 
 
-sm._sio.register_namespace(MyCustomNamespace('/chat'))
+sm._sio.register_namespace(MyCustomNamespace('/'))
 
 
