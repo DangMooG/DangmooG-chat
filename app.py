@@ -87,4 +87,4 @@ class MyCustomNamespace(socketio.AsyncNamespace):
         await self.send(data=data['content'], room=data['room'])
 # content -> type: img, text, if img: list 형식으로  추가적인 dict 형식으로 받기
 
-sm._sio.register_namespace(MyCustomNamespace('/chat'))
+sm._sio.register_namespace(MyCustomNamespace('/'))
