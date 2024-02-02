@@ -4,12 +4,17 @@ from fastapi_socketio import SocketManager
 import socketio
 from router.websocket_router import get_current_user
 from schema.message_schema import Message as Message_schema
-from model.message_dbmodel import Room, Message
+from model.message_dbmodel import Room, Message, Account
 from core.utils import get_crud
+
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import messaging
 
 chat_app = FastAPI(title="DangmooG", debug=True)
 sm = SocketManager(app=chat_app, logger=True, engineio_logger=True)
-
+credit = credentials.Certificate("firebase-adminsdk.json")
+firebase_admin.initialize_app(credit)
 # CORS RULES
 origins = [
     "*"
@@ -27,6 +32,34 @@ chat_app.add_middleware(
 @chat_app.get("/")
 async def root():
     return {"message": "당무지의 채팅서버입니다."}
+
+
+async def send_push(token: str, title: str, body: dict):
+    # See documentation on defining a message payload.
+
+    message = messaging.Message(
+        notification=messaging.Notification(
+            title=title,
+            body=body,
+        ),
+        token=token,
+        android=messaging.AndroidConfig(
+            priority='high',
+            notification=messaging.AndroidNotification(
+                sound='default'
+            )
+        ),
+        apns=messaging.APNSConfig(
+            payload=messaging.APNSPayload(
+                aps=messaging.Aps(
+                    sound='default'
+                ),
+            ),
+        ),
+    )
+    # Response is a message ID string.
+    response = messaging.send(message)
+    print('Successfully sent message:', response)
 
 
 class MyCustomNamespace(socketio.AsyncNamespace):
@@ -69,12 +102,23 @@ class MyCustomNamespace(socketio.AsyncNamespace):
         if room_information.buyer_id == sender:
             is_from_buyer = 1
             if room_information.seller_id not in self.connected_users:
+                sender_account = crud.get_record(Account, {"account_id": sender})
+                uname = sender_account.username
+                reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
+                await send_push(reciever.fcm, uname,
+                                {"room_id": data['room'], "post_id": room_information.post_id, "message": data['message']})
                 print("app push", self.connected_users)
             elif not_in_room:
                 print("in app push", self.room_users)
         else:
             is_from_buyer = 0
             if room_information.buyer_id not in self.connected_users:
+                sender_account = crud.get_record(Account, {"account_id": sender})
+                uname = sender_account.username
+                reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
+                await send_push(reciever.fcm, uname,
+                                {"room_id": data['room'], "post_id": room_information.post_id,
+                                 "message": data['message']})
                 print("app push", self.connected_users)
             elif not_in_room:
                 print("in app push", self.room_users)
