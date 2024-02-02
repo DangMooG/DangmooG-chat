@@ -34,7 +34,6 @@ class MyCustomNamespace(socketio.AsyncNamespace):
         super().__init__(namespace=namespace)
         self.connected_users = set()
         self.room_users = {}
-        self.crud_generator = get_crud()
 
     async def on_connect(self, sid, environ, auth):
         uid = await get_current_user(auth['token'])
@@ -58,7 +57,8 @@ class MyCustomNamespace(socketio.AsyncNamespace):
     async def on_send_chat(self, sid, data: dict):
         session = await sm.get_session(sid)
         sender = session['uid']
-        crud = next(self.crud_generator)
+        crud_generator = get_crud()
+        crud = next(crud_generator)
         room_information = crud.search_record(Room, {"room_id": data["room"]})[0]
         print(room_information.buyer_id, "<-buyer, sender->", sender)
         print(f"room: {data['room']} message: {data['content']}")
