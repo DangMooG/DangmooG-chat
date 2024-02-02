@@ -28,6 +28,7 @@ class Message(Base):
     message_id = Column(Integer, nullable=False, autoincrement=True, primary_key=True)
     room_id = Column(String, ForeignKey("room.room_id"), nullable=False)
     is_from_buyer = Column(TINYINT, nullable=False)
+    is_photo = Column(TINYINT, default=0)
     content = Column(String, nullable=False)
     read = Column(TINYINT, default=0)
     create_time = Column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
