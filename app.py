@@ -10,6 +10,7 @@ from core.utils import get_crud
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import messaging
+import json
 
 chat_app = FastAPI(title="DangmooG", debug=True)
 sm = SocketManager(app=chat_app, logger=True, engineio_logger=True)
@@ -34,7 +35,7 @@ async def root():
     return {"message": "당무지의 채팅서버입니다."}
 
 
-async def send_push(token: str, title: str, body: dict):
+async def send_push(token: str, title: str, body: str):
     # See documentation on defining a message payload.
 
     message = messaging.Message(
@@ -105,8 +106,9 @@ class MyCustomNamespace(socketio.AsyncNamespace):
                 sender_account = crud.get_record(Account, {"account_id": sender})
                 uname = sender_account.username
                 reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
+                body = {"room_id": data['room'], "post_id": room_information.post_id, "message": data['content']}
                 await send_push(reciever.fcm, uname,
-                                {"room_id": data['room'], "post_id": room_information.post_id, "message": data['content']})
+                                json.dumps(body))
                 print("app push", self.connected_users)
             elif not_in_room:
                 print("in app push", self.room_users)
@@ -116,9 +118,8 @@ class MyCustomNamespace(socketio.AsyncNamespace):
                 sender_account = crud.get_record(Account, {"account_id": sender})
                 uname = sender_account.username
                 reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
-                await send_push(reciever.fcm, uname,
-                                {"room_id": data['room'], "post_id": room_information.post_id,
-                                 "message": data['content']})
+                body = json.dumps({"room_id": data['room'], "post_id": room_information.post_id, "message": data['content']})
+                await send_push(reciever.fcm, uname, body)
                 print("app push", self.connected_users)
             elif not_in_room:
                 print("in app push", self.room_users)
