@@ -34,8 +34,7 @@ class MyCustomNamespace(socketio.AsyncNamespace):
         super().__init__(namespace=namespace)
         self.connected_users = set()
         self.room_users = {}
-        crud_generator = get_crud()
-        self.crud = next(crud_generator)
+        self.crud_generator = get_crud()
 
     async def on_connect(self, sid, environ, auth):
         uid = await get_current_user(auth['token'])
@@ -78,7 +77,8 @@ class MyCustomNamespace(socketio.AsyncNamespace):
                 print("app push", self.connected_users)
             elif not_in_room:
                 print("in app push", self.room_users)
-        self.crud.create_record(Message, Message_schema(
+        crud = next(self.crud_generator)
+        crud.create_record(Message, Message_schema(
             room_id=data['room'],
             is_from_buyer=is_from_buyer,
             content=data["content"],
