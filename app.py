@@ -106,7 +106,7 @@ class MyCustomNamespace(socketio.AsyncNamespace):
                 uname = sender_account.username
                 reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
                 await send_push(reciever.fcm, uname,
-                                {"room_id": data['room'], "post_id": room_information.post_id, "message": data['message']})
+                                {"room_id": data['room'], "post_id": room_information.post_id, "message": data['content']})
                 print("app push", self.connected_users)
             elif not_in_room:
                 print("in app push", self.room_users)
@@ -118,7 +118,7 @@ class MyCustomNamespace(socketio.AsyncNamespace):
                 reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
                 await send_push(reciever.fcm, uname,
                                 {"room_id": data['room'], "post_id": room_information.post_id,
-                                 "message": data['message']})
+                                 "message": data['content']})
                 print("app push", self.connected_users)
             elif not_in_room:
                 print("in app push", self.room_users)
