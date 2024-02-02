@@ -58,7 +58,8 @@ class MyCustomNamespace(socketio.AsyncNamespace):
     async def on_send_chat(self, sid, data: dict):
         session = await sm.get_session(sid)
         sender = session['uid']
-        room_information = self.crud.search_record(Room, {"room_id": data["room"]})[0]
+        crud = next(self.crud_generator)
+        room_information = crud.search_record(Room, {"room_id": data["room"]})[0]
         print(room_information.buyer_id, "<-buyer, sender->", sender)
         print(f"room: {data['room']} message: {data['content']}")
         if len(self.room_users.get(data['room'], set())) < 2:
@@ -77,7 +78,6 @@ class MyCustomNamespace(socketio.AsyncNamespace):
                 print("app push", self.connected_users)
             elif not_in_room:
                 print("in app push", self.room_users)
-        crud = next(self.crud_generator)
         crud.create_record(Message, Message_schema(
             room_id=data['room'],
             is_from_buyer=is_from_buyer,
