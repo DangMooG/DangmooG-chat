@@ -21,7 +21,7 @@ SECRET_KEY = os.environ["ACCESS_TOKEN_HASH"]
 ALGORITHM = "HS256"
 
 
-def get_current_user(token: str):
+async def get_current_user(token: str):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

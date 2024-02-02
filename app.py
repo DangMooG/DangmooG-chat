@@ -38,7 +38,7 @@ class MyCustomNamespace(socketio.AsyncNamespace):
         self.crud = next(crud_generator)
 
     async def on_connect(self, sid, environ, auth):
-        uid = get_current_user(auth['token'])
+        uid = await get_current_user(auth['token'])
         self.connected_users.add(uid)
         await sm.save_session(sid, {'uid': uid})
 
@@ -85,6 +85,6 @@ class MyCustomNamespace(socketio.AsyncNamespace):
             read=0
         ))
         await self.send(data=data['content'], room=data['room'])
-
+# content -> type: img, text, if img: list 형식으로  추가적인 dict 형식으로 받기
 
 sm._sio.register_namespace(MyCustomNamespace('/chat'))
