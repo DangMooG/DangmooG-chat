@@ -10,12 +10,14 @@ from core.utils import get_crud
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import messaging
+from firebase_admin import auth
 import json
 
 chat_app = FastAPI(title="DangmooG", debug=True)
 sm = SocketManager(app=chat_app, logger=True, engineio_logger=True)
 credit = credentials.Certificate("firebase-adminsdk.json")
 firebase_admin.initialize_app(credit)
+
 # CORS RULES
 origins = [
     "*"
@@ -36,7 +38,19 @@ async def root():
 
 
 async def send_push(token: str, title: str, body: str):
-    # See documentation on defining a message payload.
+    try:
+        # ID 토큰 검증
+        decoded_token = auth.verify_id_token(token)
+        uid = decoded_token['uid']
+        print(f"토큰이 유효합니다. 사용자 UID: {uid}")
+        # 추가 정보 추출 가능
+    except firebase_admin.auth.InvalidIdTokenError:
+        print("토큰이 유효하지 않습니다.")
+        return -1
+    except Exception as e:
+        # 기타 예외 처리
+        print(f"토큰 검증 중 예외 발생: {e}")
+        return -1
 
     message = messaging.Message(
         notification=messaging.Notification(
@@ -61,6 +75,7 @@ async def send_push(token: str, title: str, body: str):
     # Response is a message ID string.
     response = messaging.send(message)
     print('Successfully sent message:', response)
+    return 0
 
 
 class MyCustomNamespace(socketio.AsyncNamespace):
@@ -109,8 +124,9 @@ class MyCustomNamespace(socketio.AsyncNamespace):
                 uname = sender_account.username
                 reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
                 body = json.dumps({"room": data['room'], "post_id": room_information.post_id, "type": data['type'], "message": data['content']})
-                await send_push(reciever.fcm, uname,
-                                body)
+                response = await send_push(reciever.fcm, uname, body)
+                if response == -1:
+                    crud.patch_record(Account, {"fcm": None})
                 print("app push", self.connected_users[sender])
             elif not_in_room:
                 print("in app push", self.room_users)
@@ -122,7 +138,9 @@ class MyCustomNamespace(socketio.AsyncNamespace):
                 uname = sender_account.username
                 reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
                 body = json.dumps({"room": data['room'], "post_id": room_information.post_id, "type": data['type'], "message": data['content']})
-                await send_push(reciever.fcm, uname, body)
+                response = await send_push(reciever.fcm, uname, body)
+                if response == -1:
+                    crud.patch_record(Account, {"fcm": None})
                 print("app push", self.connected_users)
             elif not_in_room:
                 print("in app push", self.room_users)
