@@ -66,17 +66,17 @@ async def send_push(token: str, title: str, body: str):
 class MyCustomNamespace(socketio.AsyncNamespace):
     def __init__(self, namespace):
         super().__init__(namespace=namespace)
-        self.connected_users = set()
+        self.connected_users = {}
         self.room_users = {}
 
     async def on_connect(self, sid, environ, auth):
         uid = await get_current_user(auth['token'])
-        self.connected_users.add(uid)
+        self.connected_users[uid] = sid
         await sm.save_session(sid, {'uid': uid})
 
     async def on_disconnect(self, sid):
         session = sm.get_session(sid)
-        self.connected_users.remove(session['uid'])
+        del self.connected_users[session['uid']]
         await sm.disconnect(sid)
 
     async def on_begin_chat(self, sid, room: str):
@@ -103,19 +103,21 @@ class MyCustomNamespace(socketio.AsyncNamespace):
             not_in_room = False
         if room_information.buyer_id == sender:
             is_from_buyer = 1
-            if room_information.seller_id not in self.connected_users:
+            reciever = room_information.seller_id
+            if room_information.seller_id not in self.connected_users.keys():
                 sender_account = crud.get_record(Account, {"account_id": sender})
                 uname = sender_account.username
                 reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
                 body = json.dumps({"room_id": data['room'], "post_id": room_information.post_id, "type": data['type'], "message": data['content']})
                 await send_push(reciever.fcm, uname,
                                 body)
-                print("app push", self.connected_users)
+                print("app push", self.connected_users[sender])
             elif not_in_room:
                 print("in app push", self.room_users)
         else:
             is_from_buyer = 0
-            if room_information.buyer_id not in self.connected_users:
+            reciever = room_information.buyer_id
+            if room_information.buyer_id not in self.connected_users.keys():
                 sender_account = crud.get_record(Account, {"account_id": sender})
                 uname = sender_account.username
                 reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
@@ -131,7 +133,9 @@ class MyCustomNamespace(socketio.AsyncNamespace):
                 content=data["content"],
                 read=0
             ))
-        await self.send(data=json.dumps({"type": data['type'], "content": data['content']}), room=data['room'])
+        # await self.send(data=json.dumps({"type": data['type'], "content": data['content']}), room=data['room'])
+        if reciever in self.connected_users.keys():
+            await self.send(data={"room_id": data['room'], "type": data['type'], "content": data['content']}, to=self.connected_users[reciever])
 # content -> type: img, text, if img: list 형식으로  추가적인 dict 형식으로 받기
 
 sm._sio.register_namespace(MyCustomNamespace('/'))
