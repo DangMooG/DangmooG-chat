@@ -135,7 +135,7 @@ class MyCustomNamespace(socketio.AsyncNamespace):
             ))
         # await self.send(data=json.dumps({"type": data['type'], "content": data['content']}), room=data['room'])
         if reciever in self.connected_users.keys():
-            await self.send(data={"room": data['room'], "type": data['type'], "content": data['content']}, to=self.connected_users[reciever])
+            await self.send(data={"room": data['room'], "type": data['type'], "content": data['content']}, to=self.connected_users[reciever],skip_sid=sid)
 # content -> type: img, text, if img: list 형식으로  추가적인 dict 형식으로 받기
 
 sm._sio.register_namespace(MyCustomNamespace('/'))
