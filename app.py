@@ -108,7 +108,7 @@ class MyCustomNamespace(socketio.AsyncNamespace):
                 sender_account = crud.get_record(Account, {"account_id": sender})
                 uname = sender_account.username
                 reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
-                body = json.dumps({"room_id": data['room'], "post_id": room_information.post_id, "type": data['type'], "message": data['content']})
+                body = json.dumps({"room": data['room'], "post_id": room_information.post_id, "type": data['type'], "message": data['content']})
                 await send_push(reciever.fcm, uname,
                                 body)
                 print("app push", self.connected_users[sender])
@@ -121,7 +121,7 @@ class MyCustomNamespace(socketio.AsyncNamespace):
                 sender_account = crud.get_record(Account, {"account_id": sender})
                 uname = sender_account.username
                 reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
-                body = json.dumps({"room_id": data['room'], "post_id": room_information.post_id, "type": data['type'], "message": data['content']})
+                body = json.dumps({"room": data['room'], "post_id": room_information.post_id, "type": data['type'], "message": data['content']})
                 await send_push(reciever.fcm, uname, body)
                 print("app push", self.connected_users)
             elif not_in_room:
@@ -135,7 +135,7 @@ class MyCustomNamespace(socketio.AsyncNamespace):
             ))
         # await self.send(data=json.dumps({"type": data['type'], "content": data['content']}), room=data['room'])
         if reciever in self.connected_users.keys():
-            await self.send(data={"room_id": data['room'], "type": data['type'], "content": data['content']}, to=self.connected_users[reciever])
+            await self.send(data={"room": data['room'], "type": data['type'], "content": data['content']}, to=self.connected_users[reciever])
 # content -> type: img, text, if img: list 형식으로  추가적인 dict 형식으로 받기
 
 sm._sio.register_namespace(MyCustomNamespace('/'))
