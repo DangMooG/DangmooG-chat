@@ -113,9 +113,9 @@ class MyCustomNamespace(socketio.AsyncNamespace):
         print(room_information.buyer_id, "<-buyer, sender->", sender)
         print(f"room: {data['room']} message: {data['content']}")
         if len(self.room_users.get(data['room'], set())) < 2:
-            not_in_room = True
+            in_room = 0
         else:
-            not_in_room = False
+            in_room = 1
         if room_information.buyer_id == sender:
             is_from_buyer = 1
             reciever = room_information.seller_id
@@ -128,7 +128,7 @@ class MyCustomNamespace(socketio.AsyncNamespace):
                 if response == -1:
                     crud.patch_record(Account, {"fcm": None})
                 print("app push", self.connected_users[sender])
-            elif not_in_room:
+            elif not in_room:
                 print("in app push", self.room_users)
         else:
             is_from_buyer = 0
@@ -142,14 +142,14 @@ class MyCustomNamespace(socketio.AsyncNamespace):
                 if response == -1:
                     crud.patch_record(Account, {"fcm": None})
                 print("app push", self.connected_users)
-            elif not_in_room:
+            elif not in_room:
                 print("in app push", self.room_users)
         if data['type'] == 'txt':
             crud.create_record(Message, Message_schema(
                 room_id=data['room'],
                 is_from_buyer=is_from_buyer,
                 content=data["content"],
-                read=0
+                read=in_room
             ))
         # await self.send(data=json.dumps({"type": data['type'], "content": data['content']}), room=data['room'])
         if reciever in self.connected_users.keys():
