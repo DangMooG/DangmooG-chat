@@ -37,7 +37,7 @@ async def root():
     return {"message": "당무지의 채팅서버입니다."}
 
 
-async def send_push(token: str, title: str, body: str):
+def send_push(token: str, title: str, body: str):
     try:
         # ID 토큰 검증
         decoded_token = auth.verify_id_token(token)
@@ -125,7 +125,7 @@ class MyCustomNamespace(socketio.AsyncNamespace):
                 uname = sender_account.username
                 reciever_obj: Account = crud.get_record(Account, {"account_id": reciever})
                 body = json.dumps({"room": data['room'], "post_id": room_information.post_id, "type": data['type'], "message": data['content']})
-                response = await send_push(reciever_obj.fcm, uname, body)
+                response = send_push(reciever_obj.fcm, uname, body)
                 if response == -1:
                     crud.patch_record(Account, {"fcm": None})
                 print("app push", self.connected_users[sender])
@@ -140,7 +140,7 @@ class MyCustomNamespace(socketio.AsyncNamespace):
                 uname = sender_account.username
                 reciever_obj: Account = crud.get_record(Account, {"account_id": reciever})
                 body = json.dumps({"room": data['room'], "post_id": room_information.post_id, "type": data['type'], "message": data['content']})
-                response = await send_push(reciever_obj.fcm, uname, body)
+                response = send_push(reciever_obj.fcm, uname, body)
                 if response == -1:
                     crud.patch_record(Account, {"fcm": None})
                 print("app push", self.connected_users)
