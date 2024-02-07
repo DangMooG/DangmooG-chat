@@ -119,7 +119,8 @@ class MyCustomNamespace(socketio.AsyncNamespace):
         if room_information.buyer_id == sender:
             is_from_buyer = 1
             reciever = room_information.seller_id
-            if room_information.seller_id not in self.connected_users.keys():
+            print(self.connected_users.keys(), self.connected_users.keys())
+            if self.connected_users.keys() not in self.connected_users.keys():
                 sender_account = crud.get_record(Account, {"account_id": sender})
                 uname = sender_account.username
                 reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
@@ -134,6 +135,7 @@ class MyCustomNamespace(socketio.AsyncNamespace):
             is_from_buyer = 0
             reciever = room_information.buyer_id
             if room_information.buyer_id not in self.connected_users.keys():
+                print(self.connected_users.keys(), self.connected_users.keys())
                 sender_account = crud.get_record(Account, {"account_id": sender})
                 uname = sender_account.username
                 reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
