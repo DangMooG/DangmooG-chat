@@ -123,9 +123,9 @@ class MyCustomNamespace(socketio.AsyncNamespace):
             if self.connected_users.keys() not in self.connected_users.keys():
                 sender_account = crud.get_record(Account, {"account_id": sender})
                 uname = sender_account.username
-                reciever: Account = crud.get_record(Account, {"account_id": room_information.seller_id})
+                reciever_obj: Account = crud.get_record(Account, {"account_id": reciever})
                 body = json.dumps({"room": data['room'], "post_id": room_information.post_id, "type": data['type'], "message": data['content']})
-                response = await send_push(reciever.fcm, uname, body)
+                response = await send_push(reciever_obj.fcm, uname, body)
                 if response == -1:
                     crud.patch_record(Account, {"fcm": None})
                 print("app push", self.connected_users[sender])
@@ -138,9 +138,9 @@ class MyCustomNamespace(socketio.AsyncNamespace):
             if room_information.buyer_id not in self.connected_users.keys():
                 sender_account = crud.get_record(Account, {"account_id": sender})
                 uname = sender_account.username
-                reciever: Account = crud.get_record(Account, {"account_id": room_information.buyer_id})
+                reciever_obj: Account = crud.get_record(Account, {"account_id": reciever})
                 body = json.dumps({"room": data['room'], "post_id": room_information.post_id, "type": data['type'], "message": data['content']})
-                response = await send_push(reciever.fcm, uname, body)
+                response = await send_push(reciever_obj.fcm, uname, body)
                 if response == -1:
                     crud.patch_record(Account, {"fcm": None})
                 print("app push", self.connected_users)
