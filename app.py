@@ -38,20 +38,6 @@ async def root():
 
 
 def send_push(token: str, title: str, body: str):
-    try:
-        # ID 토큰 검증
-        decoded_token = auth.verify_id_token(token)
-        uid = decoded_token['uid']
-        print(f"토큰이 유효합니다. 사용자 UID: {uid}")
-        # 추가 정보 추출 가능
-    except firebase_admin.auth.InvalidIdTokenError:
-        print("토큰이 유효하지 않습니다.")
-        return -1
-    except Exception as e:
-        # 기타 예외 처리
-        print(f"토큰 검증 중 예외 발생: {e}")
-        return -1
-
     message = messaging.Message(
         notification=messaging.Notification(
             title=title,
