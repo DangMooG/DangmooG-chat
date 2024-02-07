@@ -90,7 +90,7 @@ class MyCustomNamespace(socketio.AsyncNamespace):
         await sm.save_session(sid, {'uid': uid})
 
     async def on_disconnect(self, sid):
-        session = sm.get_session(sid)
+        session = await sm.get_session(sid)
         del self.connected_users[session['uid']]
         await sm.disconnect(sid)
 
