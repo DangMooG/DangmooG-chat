@@ -7,3 +7,4 @@ __pycache__
 docker-compose.yml
 *.yml
 test.py
+client.ipynb
