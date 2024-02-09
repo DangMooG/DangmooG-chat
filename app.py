@@ -113,32 +113,23 @@ class MyCustomNamespace(socketio.AsyncNamespace):
             is_from_buyer = 1
             reciever = room_information.seller_id
             print(self.connected_users.keys(), self.connected_users.keys())
-            if room_information.seller_id not in self.connected_users.keys():
-                sender_account = crud.get_record(Account, {"account_id": sender})
-                uname = sender_account.username
-                reciever_obj: Account = crud.get_record(Account, {"account_id": reciever})
-                body = json.dumps({"room": data['room'], "post_id": room_information.post_id, "type": data['type'], "message": data['content']})
-                response = await send_push(reciever_obj.fcm, uname, body)
-                if response == -1:
-                    crud.patch_record(Account, {"fcm": None})
-                print("app push", self.connected_users[sender])
-            elif not in_room:
-                print("in app push", self.room_users)
         else:
             is_from_buyer = 0
             reciever = room_information.buyer_id
             print(self.connected_users.keys(), self.connected_users.keys())
-            if room_information.buyer_id not in self.connected_users.keys():
-                sender_account = crud.get_record(Account, {"account_id": sender})
-                uname = sender_account.username
-                reciever_obj: Account = crud.get_record(Account, {"account_id": reciever})
-                body = json.dumps({"room": data['room'], "post_id": room_information.post_id, "type": data['type'], "message": data['content']})
-                response = await send_push(reciever_obj.fcm, uname, body)
-                if response == -1:
-                    crud.patch_record(Account, {"fcm": None})
-                print("app push", self.connected_users)
-            elif not in_room:
-                print("in app push", self.room_users)
+
+        if reciever not in self.connected_users.keys():
+            sender_account = crud.get_record(Account, {"account_id": sender})
+            uname = sender_account.username
+            reciever_obj: Account = crud.get_record(Account, {"account_id": reciever})
+            body = json.dumps({"room": data['room'], "post_id": room_information.post_id, "type": data['type'],
+                               "message": data['content']})
+            response = await send_push(reciever_obj.fcm, uname, body)
+            if response == -1:
+                crud.patch_record(Account, {"fcm": None})
+            print("app push", self.connected_users[sender])
+        elif not in_room:
+            print("in app push", self.room_users)
         if data['type'] == 'txt':
             crud.create_record(Message, Message_schema(
                 room_id=data['room'],
