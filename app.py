@@ -132,14 +132,16 @@ class MyCustomNamespace(socketio.AsyncNamespace):
 
         if data['type'] == 'img':
             is_photo = 1
+            content = json.dumps(data["content"])
         else:
             is_photo = 0
+            content = data["content"]
 
         crud.create_record(Message, Message_schema(
             room_id=data['room'],
             is_from_buyer=is_from_buyer,
             is_photo=is_photo,
-            content=data["content"],
+            content=content,
             read=in_room
         ))
         # await self.send(data=json.dumps({"type": data['type'], "content": data['content']}), room=data['room'])
