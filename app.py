@@ -123,19 +123,25 @@ class MyCustomNamespace(socketio.AsyncNamespace):
             uname = sender_account.username
             reciever_obj: Account = crud.get_record(Account, {"account_id": reciever})
             # body = json.dumps({"room": data['room'], "post_id": room_information.post_id, "type": data['type'], "message": data['content']})
-            response = await send_push(reciever_obj.fcm, uname, data["content"])
+            response = await send_push(reciever_obj.fcm, uname, "채팅: "+data["content"])
             if response == -1:
                 crud.patch_record(Account, {"fcm": None})
             print("app push", self.connected_users[sender])
         elif not in_room:
             print("in app push", self.room_users)
-        if data['type'] == 'txt':
-            crud.create_record(Message, Message_schema(
-                room_id=data['room'],
-                is_from_buyer=is_from_buyer,
-                content=data["content"],
-                read=in_room
-            ))
+
+        if data['type'] == 'img':
+            is_photo = 1
+        else:
+            is_photo = 0
+
+        crud.create_record(Message, Message_schema(
+            room_id=data['room'],
+            is_from_buyer=is_from_buyer,
+            is_photo=is_photo,
+            content=data["content"],
+            read=in_room
+        ))
         # await self.send(data=json.dumps({"type": data['type'], "content": data['content']}), room=data['room'])
         if reciever in self.connected_users.keys():
             await self.send(data={"room": data['room'], "type": data['type'], "content": data['content']}, to=self.connected_users[reciever], skip_sid=sid)
