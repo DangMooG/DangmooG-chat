@@ -123,7 +123,10 @@ class MyCustomNamespace(socketio.AsyncNamespace):
             uname = sender_account.username
             reciever_obj: Account = crud.get_record(Account, {"account_id": reciever})
             # body = json.dumps({"room": data['room'], "post_id": room_information.post_id, "type": data['type'], "message": data['content']})
-            response = await send_push(reciever_obj.fcm, uname, "채팅: "+data["content"])
+            if data['type'] == 'img':
+                response = await send_push(reciever_obj.fcm, uname, "사진을 보냈습니다.")
+            else:
+                response = await send_push(reciever_obj.fcm, uname, "채팅: " + data["content"])
             if response == -1:
                 crud.patch_record(Account, {"fcm": None})
             print("app push", self.connected_users[sender])
