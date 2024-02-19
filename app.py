@@ -129,7 +129,7 @@ class MyCustomNamespace(socketio.AsyncNamespace):
                 response = await send_push(reciever_obj.fcm, uname, "채팅: " + data["content"])
             if response == -1:
                 crud.patch_record(Account, {"fcm": None})
-            print("app push", self.connected_users[sender])
+            print("app push", self.connected_users, sender)
         elif not in_room:
             print("in app push", self.room_users)
 
