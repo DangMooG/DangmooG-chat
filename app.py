@@ -82,6 +82,11 @@ class MyCustomNamespace(socketio.AsyncNamespace):
         self.connected_users[uid] = sid
         await sm.save_session(sid, {'uid': uid})
 
+    async def on_ping(self, sid):
+        print('ping received from ', sid)
+        # 클라이언트에게 'pong' 메시지 전송
+        await sm.emit('pong', to=sid)
+
     async def on_disconnect(self, sid):
         session = await sm.get_session(sid)
         del self.connected_users[session['uid']]
